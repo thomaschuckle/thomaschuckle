@@ -1,0 +1,31 @@
+name: Update Donut
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # runs every hour (GitHub minimum is 5 min, but hourly is plenty — SVG loops forever)
+  workflow_dispatch:       # lets you trigger it manually from the Actions tab too
+  push:
+    branches: [main]       # also runs on every push so first deploy works immediately
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate donut.svg
+        run: node generate.js
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add donut.svg
+          git diff --cached --quiet || git commit -m "chore: update donut"
+          git push
