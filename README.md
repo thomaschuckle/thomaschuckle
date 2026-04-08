@@ -1,1 +1,1 @@
-![donut](./donut.svg)
+![donut](./donut.gif)

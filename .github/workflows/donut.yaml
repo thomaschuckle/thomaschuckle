@@ -17,18 +17,16 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      - name: Install Pillow
+        run: pip install Pillow
 
-      - name: Generate donut.svg
-        run: node generate.js
+      - name: Generate donut.gif
+        run: python3 generate.py
 
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add donut.svg
+          git add donut.gif
           git diff --cached --quiet || git commit -m "chore: update donut"
           git push
