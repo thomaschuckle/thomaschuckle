@@ -41,59 +41,80 @@ function renderDonut(A, B, cols, rows) {
 function generateSVG() {
   const cols = 44, rows = 22;
   const frameCount = 60;
-  const duration = 6; // seconds per full rotation — feels smooth and snappy
+  const duration = 6; // seconds for full rotation
   const W = 620, H = 340;
+
+  // How tall one frame is in SVG units (px per row * rows)
+  const lineHeight = 12;
+  const frameH = rows * lineHeight;
 
   const frames = [];
   for (let f = 0; f < frameCount; f++) {
-    const A = (f / frameCount) * Math.PI * 4; // 2 full spins of A per loop
+    const A = (f / frameCount) * Math.PI * 4;
     const B = (f / frameCount) * Math.PI * 2;
     frames.push(renderDonut(A, B, cols, rows));
   }
 
-  const n = frames.length;
+  // Stack all frames vertically — film strip
+  // We duplicate the first frame at the end so the loop is seamless
+  const allFrames = [...frames, frames[0]];
+  const totalH = allFrames.length * frameH;
 
-  // One @keyframes block per frame: opacity 1 only during its slice
-  const keyframeBlocks = frames.map((_, i) => {
-    const p0 = ((i / n) * 100).toFixed(4);
-    const p1 = (((i + 1) / n) * 100).toFixed(4);
-    const before = (parseFloat(p0) === 0 ? '0' : (parseFloat(p0) - 0.0001).toFixed(4));
-    const after  = (parseFloat(p1) - 0.0001).toFixed(4);
-    return `@keyframes kf${i}{0%{opacity:0}${before}%{opacity:0}${p0}%{opacity:1}${after}%{opacity:1}${p1}%{opacity:0}100%{opacity:0}}`;
-  }).join('');
-
-  const animRules = frames.map((_, i) => {
-    const delay = -((i / n) * duration).toFixed(4);
-    return `.f${i}{animation:kf${i} ${duration}s steps(1,end) infinite;animation-delay:${delay}s}`;
-  }).join('');
-
-  const frameEls = frames.map((frame, i) => {
+  const frameEls = allFrames.map((frame, i) => {
+    const yOffset = i * frameH;
     const tspans = frame.split('\n').map((line, j) => {
       const escaped = line
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
-      return `<tspan x="0" dy="${j === 0 ? '0' : '1.2em'}">${escaped}</tspan>`;
+      return `<tspan x="0" dy="${j === 0 ? '0' : `${lineHeight}px`}">${escaped}</tspan>`;
     }).join('');
-    return `<text class="frame f${i}">${tspans}</text>`;
-  }).join('');
+    return `<text y="${yOffset + lineHeight}">${tspans}</text>`;
+  }).join('\n');
+
+  // Animate translateY from 0 to -frameH*frameCount
+  // steps(frameCount, end) snaps between frames with no sub-frame interpolation
+  // The duplicated last frame means at t=100% we're back at frame 0 visually
+  const totalScroll = frameCount * frameH;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+<defs>
+  <clipPath id="clip">
+    <rect x="0" y="0" width="460" height="${frameH}"/>
+  </clipPath>
+  <style>
+    .strip {
+      animation: scroll ${duration}s steps(${frameCount}, end) infinite;
+    }
+    @keyframes scroll {
+      from { transform: translateY(0); }
+      to   { transform: translateY(-${totalScroll}px); }
+    }
+    text {
+      font-family: monospace;
+      font-size: 10px;
+      fill: #e6a030;
+      white-space: pre;
+    }
+    .label {
+      font-size: 15px;
+      font-weight: bold;
+      fill: #e6edf3;
+      animation: none;
+    }
+  </style>
+</defs>
 <rect width="${W}" height="${H}" fill="#0d1117" rx="12"/>
-<style>
-.frame{font-family:monospace;font-size:10px;fill:#e6a030;opacity:0;white-space:pre}
-.label{font-family:monospace;font-size:15px;font-weight:bold;fill:#e6edf3}
-${keyframeBlocks}
-${animRules}
-</style>
 <text class="label" x="30" y="50">Hi, I'm Thomas</text>
 <text class="label" x="340" y="310">I like to make things</text>
 <text class="label" x="30" y="310">I like lego too</text>
-<g transform="translate(75, 65)" font-family="monospace" font-size="10" fill="#e6a030">
+<g transform="translate(75, 65)" clip-path="url(#clip)">
+  <g class="strip">
 ${frameEls}
+  </g>
 </g>
 </svg>`;
 }
 
 fs.writeFileSync('donut.svg', generateSVG());
-console.log('donut.svg generated successfully');
+console.log('donut.svg generated — size:', fs.statSync('donut.svg').size, 'bytes');
