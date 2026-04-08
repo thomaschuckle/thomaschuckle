@@ -53,7 +53,7 @@ def render_frame(A, B, cols=44, rows=22):
 # ── Image rendering ───────────────────────────────────────────────────────────
 
 BG      = (13, 17, 23)       # #0d1117  GitHub dark background
-AMBER   = (230, 160, 48)     # donut colour
+AMBER   = (255, 105, 180)    # donut colour (pink)
 WHITE   = (230, 237, 243)    # label colour
 
 # Canvas size
@@ -83,8 +83,7 @@ LABEL_FONT = load_font(14)
 
 LABELS = [
     (30,  32,  "Hi, I'm Thomas"),
-    (30,  310, "I like lego too"),
-    (340, 310, "I like to make things"),
+    (30,  310, "I like to make things"),
 ]
 
 def render_image(lines):
